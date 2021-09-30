@@ -1,0 +1,333 @@
+// Neo4j Browser Guides
+Introduction
+Neo4j Browser is a command driven client, like a web-based shell environment. It is perfect for running ad-hoc graph queries, with just enough ability to prototype a Neo4j-based application.
+
+Developer focused, for writing and running graph queries with Cypher
+Exportable tabular results of any query result
+Graph visualization of query results containing nodes and relationships
+
+:help
+:help keys
+:clear
+:history
+
+A graph database can store any kind of data using a few simple concepts:
+Nodes - graph data records
+Relationships - connect nodes
+Properties - named data values
+
+// Nodes
+Nodes are the name for data records in a graph
+Data is stored as Properties
+Properties are simple name/value pairs
+
+// Labels
+Nodes can be grouped together by applying a Label to each member. In our social graph, we'll label each node that represents a Person.
+A node can have zero or more labels
+Labels do not have any properties
+
+// Properties
+Properties can be strings, numbers, or booleans
+
+// Relationships
+Relationships always have direction
+Relationships always have a type
+
+declarative, describing what to find, not how to find it
+
+// CREATE
+CREATE (ee:Person { name: "Emil", from: "Sweden", klout: 99 })
+CREATE clause to create data
+() parenthesis to indicate a node
+ee:Person a variable 'ee' and label 'Person' for the new node
+{} brackets to add properties to the node
+
+// MATCH
+MATCH clause to specify a pattern of nodes and relationships
+(ee:Person) a single node pattern with label 'Person' which will assign matches to the variable 'ee'
+WHERE clause to constrain the results
+ee.name = "Emil" compares name property to the value "Emil"
+RETURN clause used to request particular results
+
+MATCH (ee:Person) WHERE ee.name = "Emil"
+CREATE (js:Person { name: "Johan", from: "Sweden", learn: "surfing" }),
+(ir:Person { name: "Ian", from: "England", title: "author" }),
+(rvb:Person { name: "Rik", from: "Belgium", pet: "Orval" }),
+(ally:Person { name: "Allison", from: "California", hobby: "surfing" }),
+(ee)-[:KNOWS {since: 2001}]->(js),
+(ee)-[:KNOWS {rating: 5}]->(ir),
+(js)-[:KNOWS]->(ir),
+(js)-[:KNOWS]->(rvb),
+(ir)-[:KNOWS]->(js),
+(ir)-[:KNOWS]->(ally),
+(rvb)-[:KNOWS]->(ally)
+
+// find all friends
+MATCH (ee:Person)-[:KNOWS]-(dump_people)
+WHERE ee.name = "Emil"
+RETURN ee, dump_people
+
+MATCH (ee:Person {name: "Johan"})-[:KNOWS]-(dumb_people)
+RETURN ee, dumb_people;
+
+// find surfing friend, friend of a friend
+MATCH (js:Person)-[:KNOWS]-()-[:KNOWS]-(no_name)
+WHERE js.name = "Johan" AND no_name.hobby = "surfing"
+RETURN DISTINCT no_name
+
+MATCH (js:Person {name: "Johan"})-[:KNOWS]-()-[:KNOWS]-(no_name)
+WHERE no_name.hobby = "surfing"
+RETURN DISTINCT no_name
+
+// Johan is learning to surf, so he may want to find a new friend who already does
+PROFILE MATCH (js:Person)-[:KNOWS]-()-[:KNOWS]-(surfer)
+WHERE js.name = "Johan" AND surfer.hobby = "surfing"
+RETURN DISTINCT surfer
+
+
+
+
+
+// Create movie database
+moviesdb.json
+
+
+
+MATCH (a:Person {name: "Tom Hanks"})-[:ACTED_IN]->(m)<-[:DIRECTED]-(d)
+RETURN a,m,d LIMIT 10;
+
+// Find a person
+MATCH (tom {name: "Tom Hanks"})
+RETURN tom
+
+MATCH (tom:Person) 
+WHERE tom.name = "Tom Hanks"
+RETURN tom
+
+// Find 10 people
+MATCH (p:Person)
+RETURN p.name
+LIMIT 10;
+
+// Find movies released in the 1990s
+MATCH (m:Movie)
+WHERE m.released < 2000 AND m.released >= 1990
+RETURN m.title;
+
+// List all Tom Hanks movies...
+MATCH (tom:Person {name: "Tom Hanks"})-[a:ACTED_IN]->(m:Movie) 
+RETURN tom, a, m;
+
+MATCH (tom:Person {name: "Tom Hanks"})-[ACTED_IN]->(m) 
+RETURN tom, m;
+
+// Who directed "Cloud Atlas"?
+MATCH (p:Person)-[:DIRECTED]->(m:Movie {title: "Cloud Atlas"})
+RETURN p.name
+
+MATCH (m:Movie {title: "Cloud Atlas"})<-[:DIRECTED]-(p:Person)
+RETURN p.name
+
+MATCH (cloudAtlas {title: "Cloud Atlas"})<-[:DIRECTED]-(directors) 
+RETURN directors.name
+
+// Tom Hanks' co-actors...
+MATCH (tom:Person {name: "Tom Hanks"})-[:ACTED_IN]->(movies)<-[:ACTED_IN]-(actors:Person)
+RETURN actors.name
+
+MATCH (tom {name: "Tom Hanks"})-[:ACTED_IN]->(movies)<-[:ACTED_IN]-(actors:Person)
+RETURN actors.name
+
+MATCH (tom:Person {name:"Tom Hanks"})-[:ACTED_IN]->(m)<-[:ACTED_IN]-(coActors) 
+RETURN coActors.name
+
+// How people are related to "Cloud Atlas"...
+MATCH (p:Person)-[r]->(m:Movie {title: "Cloud Atlas"})
+RETURN p.name, type(r)
+
+// Movies and actors up to 4 "hops" away from Kevin Bacon
+MATCH (bacon:Person {name: "Kevin Bacon"})-[*1..4]-(people)
+RETURN people
+LIMIT 20
+
+// Bacon path, the shortest path of any relationships to Meg Ryan
+// shortestPath()
+MATCH p=shortestPath((:Person {name: "Kevin Bacon"})-[*]-(:Person {name: "Meg Ryan"}))
+RETURN p
+
+// Let's recommend new co-actors for Tom Hanks. A basic recommendation approach is to find connections past an immediate neighborhood which are themselves well connected.
+// For Tom Hanks, that means:
+// Find actors that Tom Hanks hasn't yet worked with, but his co-actors have.
+// Find someone who can introduce Tom to his potential co-actor.
+// Extend Tom Hanks co-actors, to find co-co-actors who haven't worked with Tom Hanks...
+MATCH (tom:Person {name: "Tom Hanks"})-[:ACTED_IN]->()<-[:ACTED_IN]-(coAct:Person),
+    (coAct:Person)-[:ACTED_IN]->()<-[:ACTED_IN]-(cocoAct)
+WHERE NOT (tom)-[:ACTED_IN]->()<-[:ACTED_IN]-(cocoAct) AND tom <> cocoAct
+RETURN cocoAct.name, COUNT(*) AS STR ORDER BY STR DESC
+
+MATCH (tom:Person {name:"Tom Hanks"})-[:ACTED_IN]->(m)<-[:ACTED_IN]-(coActors),
+  (coActors)-[:ACTED_IN]->(m2)<-[:ACTED_IN]-(cocoActors)
+WHERE NOT (tom)-[:ACTED_IN]->()<-[:ACTED_IN]-(cocoActors) AND tom <> cocoActors
+RETURN cocoActors.name AS Recommended, count(*) AS Strength ORDER BY Strength DESC
+
+// Find someone to introduce Tom Hanks to Tom Cruise
+MATCH (tom:Person {name: "Tom Hanks"})-[:ACTED_IN]->(m)<-[:ACTED_IN]-(coActors),
+    (coActors)-[:ACTED_IN]->(m2)<-[:ACTED_IN]-(tom2:Person {name: "Tom Cruise"})
+RETURN tom, m, coActors, m2, tom2
+
+// Delete all Movie and Person nodes, and their relationships
+MATCH (n) 
+DETACH DELETE n
+
+MATCH (n) 
+RETURN n
+
+
+
+
+
+// Translate and import relation data into graph
+// Load records
+LOAD CSV WITH HEADERS FROM "http://data.neo4j.com/northwind/products.csv" AS row
+CREATE (n:Product)
+SET n = row,
+n.unitPrice = toFloat(row.unitPrice),
+n.unitsInStock = toInteger(row.unitsInStock), n.unitsOnOrder = toInteger(row.unitsOnOrder),
+n.reorderLevel = toInteger(row.reorderLevel), n.discontinued = (row.discontinued <> "0")
+
+LOAD CSV WITH HEADERS FROM "http://data.neo4j.com/northwind/categories.csv" AS row
+CREATE (n:Category)
+SET n = row
+
+LOAD CSV WITH HEADERS FROM "http://data.neo4j.com/northwind/suppliers.csv" AS row
+CREATE (n:Supplier)
+SET n = row
+
+// Create indexes
+CREATE INDEX ON :Product(productID)
+CREATE INDEX ON :Product(productName)
+CREATE INDEX ON :Category(categoryID)
+CREATE INDEX ON :Supplier(supplierID)
+
+// Create data relationships
+MATCH (c:Category), (p:Product)
+WHERE c.categoryID = p.categoryID
+CREATE (p)-[:PART_OF]->(c)
+
+MATCH (s:Supplier), (p:Product)
+WHERE s.supplierID = p.supplierID
+CREATE (s)-[:SUPPLIES]->(p) // meaby reverse?
+
+// List the product categories provided by each supplier.
+MATCH (s:Supplier)-->(p:Product)-->(c:Category)
+RETURN s.companyName AS Company, COLLECT(DISTINCT c.categoryName) AS Categories
+
+// Find the produce suppliers.
+MATCH (s:Supplier)-->(p:Product)-->(c:Category {categoryName: "Produce"})
+RETURN s.companyName AS Company
+
+// Load and index records
+LOAD CSV WITH HEADERS FROM "http://data.neo4j.com/northwind/customers.csv" AS row
+CREATE (n:Customer)
+SET n = row
+LOAD CSV WITH HEADERS FROM "http://data.neo4j.com/northwind/orders.csv" AS row
+CREATE (n:Order)
+SET n = row
+CREATE INDEX ON :Customer(customerID)
+CREATE INDEX ON :Order(orderID)
+
+MATCH (c:Customer),(o:Order)
+WHERE c.customerID = o.customerID
+CREATE (c)-[:PURCHASED]->(o)
+
+LOAD CSV WITH HEADERS FROM "http://data.neo4j.com/northwind/order-details.csv" AS row
+MATCH (p:Product), (o:Order)
+WHERE p.productID = row.productID AND o.orderID = row.orderID
+CREATE (o)-[details:ORDERS]->(p)
+SET details = row,
+details.quantity = toInteger(row.quantity)
+
+// Find how much 'Produce' distinct customers bought
+MATCH (cust:Customer)-[:PURCHASED]->(:Order)-[o:ORDERS]->(p:Product),
+  (p)-[:PART_OF]->(c:Category {categoryName:"Produce"})
+RETURN DISTINCT cust.contactName as CustomerName, SUM(o.quantity) AS TotalProductsPurchased
+
+
+
+
+
+// table names
+CALL db.labels()
+
+// return the relationship type of all relationships bound to the variable b
+RETURN TYPE(b)
+
+// get a list of all procedures in the DBMS
+dbms.procedures()
+
+// What Cypher statement returns the keys used for properties on nodes and relationships in the database?
+RETURN db.keys(a)
+
+// return relationship type
+RETURN type(b)
+
+
+
+
+
+
+// TutorialsPoint
+// Home
+Neo4j is one of the popular Graph Databases and Cypher Query Language (CQL).
+
+Sr.No	RDBMS 	      Graph Database
+1	    Tables	          Graphs
+2	    Rows	            Nodes
+3	    Columns and Data	Properties and its values
+4	    Constraints	      Relationships
+5	    Joins	            Traversal
+
+Neo4j CQL Clauses
+https://www.tutorialspoint.com/neo4j/neo4j_cql_introduction.htm
+
+Following are the read clauses of Neo4j Cypher Query Language −
+Sr.No	Read Clauses	Usage
+1	MATCH	This clause is used to search the data with a specified pattern.
+2	OPTIONAL MATCH	This is the same as match, the only difference being it can use nulls in case of missing parts of the pattern.
+3	WHERE	This clause id is used to add contents to the CQL queries.
+4	START	This clause is used to find the starting points through the legacy indexes.
+5	LOAD CSV	This clause is used to import data from CSV files.
+
+Following are the write clauses of Neo4j Cypher Query Language −
+Sr.No	Write Clause	Usage
+1	CREATE	This clause is used to create nodes, relationships, and properties.
+2	MERGE	This clause verifies whether the specified pattern exists in the graph. If not, it creates the pattern.
+3	SET	This clause is used to update labels on nodes, properties on nodes and relationships.
+4	DELETE	This clause is used to delete nodes and relationships or paths etc. from the graph.
+5	REMOVE	This clause is used to remove properties and elements from nodes and relationships.
+6	FOREACH	This class is used to update the data within a list.
+7	CREATE UNIQUE	Using the clauses CREATE and MATCH, you can get a unique pattern by matching the existing pattern and creating the missing one.
+8	Importing CSV files with Cypher	Using Load CSV you can import data from .csv files.
+
+Following are the general clauses of Neo4j Cypher Query Language −
+Sr.No	General Clauses	Usage
+1	RETURN	This clause is used to define what to include in the query result set.
+2	ORDER BY	This clause is used to arrange the output of a query in order. It is used along with the clauses RETURN or WITH.
+3	LIMIT	This clause is used to limit the rows in the result to a specific value.
+4	SKIP	This clause is used to define from which row to start including the rows in the output.
+5	WITH	This clause is used to chain the query parts together.
+6	UNWIND	This clause is used to expand a list into a sequence of rows.
+7	UNION	This clause is used to combine the result of multiple queries.
+8	CALL	This clause is used to invoke a procedure deployed in the database.
+
+Following are the list of operators supported by Neo4j Cypher Query language.
+Sr.No	Type	Operators
+1	Mathematical	+, -, *, /, %, ^
+2	Comparison	+, <>, <, >, <=, >=
+3	Boolean	AND, OR, XOR, NOT
+4	String	+
+5	List	+, IN, [X], [X…..Y]
+6	Regular Expression	=-
+7	String matching	STARTS WITH, ENDS WITH, CONSTRAINTS
+
+
