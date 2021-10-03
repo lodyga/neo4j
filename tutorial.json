@@ -1,3 +1,6 @@
+node:label
+node.property
+
 // Neo4j Browser Guides
 Introduction
 Neo4j Browser is a command driven client, like a web-based shell environment. It is perfect for running ad-hoc graph queries, with just enough ability to prototype a Neo4j-based application.
@@ -216,7 +219,7 @@ CREATE (p)-[:PART_OF]->(c)
 
 MATCH (s:Supplier), (p:Product)
 WHERE s.supplierID = p.supplierID
-CREATE (s)-[:SUPPLIES]->(p) // meaby reverse?
+CREATE (s)-[:SUPPLIES]->(p)
 
 // List the product categories provided by each supplier.
 MATCH (s:Supplier)-->(p:Product)-->(c:Category)
@@ -270,6 +273,21 @@ RETURN db.keys(a)
 
 // return relationship type
 RETURN type(b)
+
+// remove a label from a node
+MATCH (n:label1:label2)
+REMOVE n:label1
+
+// return labels
+MATCH n
+RETURN labels(n)
+
+
+
+
+
+
+
 
 
 
@@ -330,4 +348,328 @@ Sr.No	Type	Operators
 6	Regular Expression	=-
 7	String matching	STARTS WITH, ENDS WITH, CONSTRAINTS
 
+
+// Creating a Single node
+CREATE (node_name), (node_name2)
+
+// Show nodes
+MATCH (n)
+RETURN n
+
+// Creating a Node with a Label
+CREATE (node:label1:label2)
+
+// Create Node with Properties
+CREATE (node:label { key1: value, key2: value, . . . . . . . . .  }) 
+
+// Returning the Created Node
+CREATE (node:Label{properties. . . . }) RETURN Node
+
+// Creating Relationships while creating nodes
+CREATE (node1)-[:RelationshipType]->(node2) 
+
+// Return relation type
+MATCH (node1)-[r]->(node2)
+RETURN type(r)
+
+// Return relation with nodes
+MATCH (node1)-[r]->(node2)
+RETURN node1, r, node2
+
+// Creating a Relationship Between the Existing Nodes
+MATCH (a:LabeofNode1 {name = "nameofnode1"}), (b:LabeofNode2 {name = "nameofnode2"})
+CREATE (a)-[:Relation]->(b)
+RETURN a, b
+
+MATCH (a:LabeofNode1), (b:LabeofNode2) 
+   WHERE a.name = "nameofnode1" AND b.name = " nameofnode2" 
+CREATE (a)-[:Relation]->(b) 
+RETURN a, b
+
+// Creating a Relationship with Label and Properties
+MATCH (a:LabeofNode1), (b:LabeofNode2) 
+WHERE a.name = "nameofnode1" AND b.name = " nameofnode2" 
+CREATE (a)-[label:Rel_Type {key1:value1, key2:value2, . . . n}]-> (b)
+RETURN a, b
+
+// Creating a Complete Path
+CREATE p = (Node1 {properties})-[:Relationship_Type]->
+   (Node2 {properties})[:Relationship_Type]->(Node3 {properties}) 
+RETURN p
+
+
+
+
+
+// Write Clauses
+// Merge Command
+// MERGE command is a combination of CREATE command and MATCH command.
+// Neo4j CQL MERGE command searches for a given pattern in the graph. If it exists, then it returns the results.
+
+// Merging a Node with a Label
+MERGE (node: label {properties . . . . . . . }) RETURN node
+
+CREATE (Dhawan:player{name: "Shikar Dhawan", YOB: 1985, POB: "Delhi"}) 
+CREATE (Ind:Country {name: "India"}) 
+CREATE (Dhawan)-[r:BATSMAN_OF]->(Ind) 
+
+MERGE (Jadeja:player) RETURN Jadeja 
+
+MERGE (CT2013:Tournament{name: "ICC Champions Trophy 2013"}) 
+RETURN CT2013, labels(CT2013)
+
+// Merging a Node with Properties
+MERGE (node:label {key1:value, key2:value, key3:value . . . . . . . . }) 
+
+MERGE (Jadeja:player {name: "Ravindra Jadeja", YOB: 1988, POB: "NavagamGhed"}) 
+RETURN Jadeja 
+
+// OnCreate and OnMatch
+MERGE (node:label {properties . . . . . . . . . . .}) 
+ON CREATE SET property.isCreated ="true" 
+ON MATCH SET property.isFound ="true"
+
+MERGE (Jadeja:player {name: "Ravindra Jadeja", YOB: 1988, POB: "NavagamGhed"}) 
+ON CREATE SET Jadeja.isCreated = "true" 
+ON MATCH SET Jadeja.isFound = "true" 
+RETURN Jadeja
+
+// Merge a Relationship
+MATCH (a:Country), (b:Tournament) 
+  WHERE a.name = "India" AND b.name = "ICC Champions Trophy 2013" 
+  MERGE (a)-[r:WINNERS_OF]->(b) 
+RETURN a, b
+
+
+
+// Set Clause
+// Setting a Property
+MATCH (node:label{properties . . . . . . . . . . . . . . }) 
+SET node.property = value 
+RETURN node
+
+CREATE (Dhawan:player {name: "Shikar Dhawan", YOB: 1985, POB: "Delhi"})
+
+MATCH (Dhawan:player {name: "Shikar Dhawan", YOB: 1985, POB: "Delhi"})
+SET Dhawan.highestscore = 187
+RETURN Dhawan
+
+// Removing a Property
+MATCH (node:label {properties}) 
+SET node.property = NULL 
+RETURN node 
+
+// Setting Multiple Properties
+MATCH (node:label {properties}) 
+SET node.property1 = value, node.property2 = value 
+RETURN node 
+
+// Setting a Label on a Node
+MATCH (n {properties . . . . . . . }) 
+SET n:label 
+RETURN n
+
+// Setting Multiple Labels on a Node
+MATCH (n {properties . . . . . . . }) 
+SET n :label1:label2 
+RETURN n
+
+
+
+// Delete Clause
+// You can delete nodes and relationships from a database using the DELETE clause.
+
+// Deleting All Nodes and Relationships
+MATCH (n) 
+DETACH DELETE n
+
+// Deleting a Particular Node
+MATCH (node:label {properties . . . . . . . . . .  }) 
+DETACH DELETE node
+
+// Deleting a relationship
+MATCH (label {properties})-[r]->()
+DELETE r
+
+
+// Remove Clause
+// The REMOVE clause is used to remove properties and labels from graph elements (Nodes or Relationships).
+
+// Removing a Property
+MATCH (node:label{properties . . . . . . . }) 
+REMOVE node.property
+RETURN node
+
+// Removing a Label From a Node
+MATCH (node:label {properties . . . . . . . . . . . }) 
+REMOVE node:label 
+RETURN node 
+
+// Removing Multiple Labels
+MATCH (node:label1:label2 {properties . . . . . . . . }) 
+REMOVE node:label1:label2 
+RETURN node
+
+// Foreach Clause
+// The FOREACH clause is used to update data within a list whether components of a path, or result of aggregation.
+
+MATCH p = (node1:label)-[*]->(node2:label)
+WHERE node1.property = "node_name" AND node2.property = "node_name" 
+FOREACH (n IN nodes(p)| SET n.property = value)
+
+MATCH p = (node1:label {property: "node_name"})-[*]->(node2:label {property: "node_name"})
+FOREACH (n IN nodes(p)| SET n.property = value)
+
+
+
+// Read Clause
+// Match Clause
+// Get All Nodes Using Match
+MATCH (n) 
+RETURN n 
+
+// Getting All Nodes Under a Specific Label
+MATCH (n:label)
+RETURN n
+
+// Match by Relationship
+MATCH (node:label)<-[: Relationship]-(n) 
+RETURN n
+
+// Delete All Nodes
+MATCH (n)
+DETACH DELETE n
+
+
+// Optional Match Clause
+MATCH (node:label {properties. . . . . . . . . . . . . .}) 
+OPTIONAL MATCH (node)-->(x) 
+RETURN x
+
+
+// Where Clause
+MATCH (label)
+WHERE label.property = "property"
+RETURN label
+
+match (n:label)-[r:rel]->(n2:label2)
+where ind.name = 'prop' AND ind.name2 = 'prop2'
+return n
+
+match (n)
+where (n:label)-[:rel]->(:label2 {name: 'prop', name2: 'prop2'})
+return n
+
+
+// Count Function
+RETURN n, count(*)
+
+
+
+
+
+// General Clauses
+// Return Clause
+Create (node:label {properties}) 
+RETURN node
+
+// Returning Relationships
+CREATE (node1)-[Relationship:Relationship_type]->(node2) 
+RETURN Relationship
+
+CREATE (node1)-[Relationship:Relationship_type]->(node2) 
+RETURN type(Relationship) 
+
+// Returning Properties
+MATCH (node:label {properties . . . . . . . . . . }) 
+RETURN node.property
+
+// Returning All Elements
+MATCH (node:label {properties}) 
+RETURN *
+
+// Returning a Variable With a Column Alias
+MATCH (node:label {properties}) 
+RETURN node AS column_alias
+
+
+// Order By Clause
+MATCH (n:label)
+RETURN n.prop1
+ORDER BY n.prop2, n.prop3 DESC
+
+// Limit Clause
+MATCH (n) 
+RETURN n 
+ORDER BY n.prop
+LIMIT limit_number
+
+// Skip Clause
+MATCH (n) 
+RETURN n 
+ORDER BY n.prop
+SKIP skip_number
+
+// Skip and Limit
+MATCH (n) 
+RETURN n 
+ORDER BY n.prop
+SKIP skip_number
+LIMIT limit_number
+
+// With Clause
+// You can chain the query arts together using the WITH clause.
+// Like group but collection does the job
+MATCH (n) 
+WITH n 
+ORDER BY n.property
+RETURN collect(n.property) // return after order if with
+
+MATCH (n) 
+WITH n
+RETURN collect(n.name)
+
+MATCH (n) 
+RETURN collect(n.name)
+
+// Unwind Clause
+UNWIND [1, 2, 3, null] AS x
+RETURN x, 'val' AS y
+
+MATCH (n:player)
+WITH collect(n.name) AS name_list
+UNWIND name_list AS name_un
+RETURN name_un
+
+
+
+// Functions
+// String Functions
+toLower(str)
+toUpper(str)
+left(str, int)
+https://neo4j.com/docs/cypher-manual/current/functions/
+
+
+// Aggregation Function
+count()
+max()
+https://neo4j.com/docs/cypher-manual/current/functions/
+
+
+
+
+// Creating an Index
+CREATE INDEX ON :label(node) 
+
+// Deleting an Index
+DROP INDEX ON: label(node) 
+
+// Create Unique Constraint
+CREATE CONSTRAINT ON (n:label) 
+ASSERT n.prop IS UNIQUE
+
+// Drop Unique
+DROP CONSTRAINT ON (node:label) 
+ASSERT node.prop IS UNIQUE
 
